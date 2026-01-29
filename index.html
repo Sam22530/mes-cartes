@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_6d6843819b8098f0d5e906f606358e87 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
+</head>
+<body>
+    
+    
+        <script>
+        window.onload = function() {
+            // On force la requête sans cache avec un timestamp et des headers
+            fetch('https://script.google.com/macros/s/AKfycbwAZzQSc40qsN7aFbbPFa1kAkiOMbFilAwundbSsVScAEHOuN2Zs8eCIyfxWGbxmkvYMA/exec?action=read&t=' + new Date().getTime(), {
+                cache: 'no-store'
+            })
+            .then(res => res.json())
+            .then(valides => {
+                console.log("Commerces validés récupérés:", valides);
+                document.querySelectorAll('button[data-key]').forEach(btn => {
+                    let key = btn.getAttribute('data-key').toUpperCase();
+                    if(valides.includes(key)) {
+                        btn.innerHTML = '✅ VALIDÉ';
+                        btn.style.background = '#27ae60';
+                        btn.style.color = 'white';
+                        btn.style.fontWeight = 'bold';
+                        btn.style.pointerEvents = 'none';
+                        btn.disabled = true;
+                    }
+                });
+            })
+            .catch(err => console.error("Erreur de synchro:", err));
+        };
+        </script>
+    
+            <div class="folium-map" id="map_6d6843819b8098f0d5e906f606358e87" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_6d6843819b8098f0d5e906f606358e87 = L.map(
+                "map_6d6843819b8098f0d5e906f606358e87",
+                {
+                    center: [48.2435, -2.9875],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 11,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_0e9c2b488a35637ac52ca490d193e5f3 = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 20,
+  "maxNativeZoom": 20,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"https://carto.com/attributions\"\u003eCARTO\u003c/a\u003e",
+  "subdomains": "abcd",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_0e9c2b488a35637ac52ca490d193e5f3.addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+
+            var geocoderOpts_geocoder_c5e7420b5ad177a427aa49c54c357319 = {
+  "collapsed": false,
+  "position": "topright",
+  "defaultMarkGeocode": true,
+  "zoom": 11,
+  "provider": "nominatim",
+  "providerOptions": {
+},
+};
+
+            // note: geocoder name should start with lowercase
+            var geocoderName_geocoder_c5e7420b5ad177a427aa49c54c357319 = geocoderOpts_geocoder_c5e7420b5ad177a427aa49c54c357319["provider"];
+
+            var customGeocoder_geocoder_c5e7420b5ad177a427aa49c54c357319 = L.Control.Geocoder[ geocoderName_geocoder_c5e7420b5ad177a427aa49c54c357319 ](
+                geocoderOpts_geocoder_c5e7420b5ad177a427aa49c54c357319['providerOptions']
+            );
+            geocoderOpts_geocoder_c5e7420b5ad177a427aa49c54c357319["geocoder"] = customGeocoder_geocoder_c5e7420b5ad177a427aa49c54c357319;
+
+            L.Control.geocoder(
+                geocoderOpts_geocoder_c5e7420b5ad177a427aa49c54c357319
+            ).on('markgeocode', function(e) {
+                var zoom = geocoderOpts_geocoder_c5e7420b5ad177a427aa49c54c357319['zoom'] || map_6d6843819b8098f0d5e906f606358e87.getZoom();
+                map_6d6843819b8098f0d5e906f606358e87.setView(e.geocode.center, zoom);
+            }).addTo(map_6d6843819b8098f0d5e906f606358e87);
+
+        
+    
+            var poly_line_df023cbecc45cc345010174b910c82b2 = L.polyline(
+                [[48.2555292, -3.0058354], [48.2555196, -3.0057275], [48.2557885, -3.0070659], [48.2478004, -2.9803963], [48.2433565, -2.976208], [48.2436034, -2.9748511], [48.243826, -2.974243], [48.2427844, -2.9747475]],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 4}
+            ).addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+            var circle_marker_b54e0c084a12d3cebee786799c06ad52 = L.circleMarker(
+                [48.2555292, -3.0058354],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+        var popup_f831b2991874c876e06bcb5d1e6bca8a = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_a0e7c4cec3031acae4780f52ba2be48b = $(`<div id="html_a0e7c4cec3031acae4780f52ba2be48b" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:150px;">                         <h4>Poste Annexe</h4>                         <p>📍 Saint-Mayeux</p>                         <button data-key="POSTE ANNEXE|SAINT-MAYEUX" data-nom="Poste Annexe" data-ville="Saint-Mayeux" onclick="                             let btn = this;                             let n = btn.getAttribute('data-nom');                             let v = btn.getAttribute('data-ville');                             btn.innerHTML='⏳...';                             fetch('https://script.google.com/macros/s/AKfycbwAZzQSc40qsN7aFbbPFa1kAkiOMbFilAwundbSsVScAEHOuN2Zs8eCIyfxWGbxmkvYMA/exec?commerce=' + encodeURIComponent(n) + '&ville=' + encodeURIComponent(v))                             .then(r => r.json()).then(d => {                                  if(d.status === 'success' || d.status === 'info') {                                      btn.innerHTML='✅ VALIDÉ';                                      btn.disabled=true;                                      btn.style.background='#27ae60';                                      btn.style.color='white';                                 } else {                                     alert(d.message);                                     btn.innerHTML='VALIDER';                                 }                             }).catch(err => { alert('Erreur: ' + err); btn.innerHTML='VALIDER'; });                         " style="background:#e67e22; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">VALIDER</button>                     </div></div>`)[0];
+                popup_f831b2991874c876e06bcb5d1e6bca8a.setContent(html_a0e7c4cec3031acae4780f52ba2be48b);
+            
+        
+
+        circle_marker_b54e0c084a12d3cebee786799c06ad52.bindPopup(popup_f831b2991874c876e06bcb5d1e6bca8a)
+        ;
+
+        
+    
+    
+            var circle_marker_af15bdff2e1975c382e0c1dc9de88c85 = L.circleMarker(
+                [48.2436034, -2.9748511],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+        var popup_40e17bbcb5ae7482e14579bb75cd33a3 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_4341e1e8e47e55aa1c94cdcca846fb0d = $(`<div id="html_4341e1e8e47e55aa1c94cdcca846fb0d" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:150px;">                         <h4>Petite bibliothèque gratuite</h4>                         <p>📍 Saint-Gilles-Vieux-Marché</p>                         <button data-key="PETITE BIBLIOTHÈQUE GRATUITE|SAINT-GILLES-VIEUX-MARCHÉ" data-nom="Petite bibliothèque gratuite" data-ville="Saint-Gilles-Vieux-Marché" onclick="                             let btn = this;                             let n = btn.getAttribute('data-nom');                             let v = btn.getAttribute('data-ville');                             btn.innerHTML='⏳...';                             fetch('https://script.google.com/macros/s/AKfycbwAZzQSc40qsN7aFbbPFa1kAkiOMbFilAwundbSsVScAEHOuN2Zs8eCIyfxWGbxmkvYMA/exec?commerce=' + encodeURIComponent(n) + '&ville=' + encodeURIComponent(v))                             .then(r => r.json()).then(d => {                                  if(d.status === 'success' || d.status === 'info') {                                      btn.innerHTML='✅ VALIDÉ';                                      btn.disabled=true;                                      btn.style.background='#27ae60';                                      btn.style.color='white';                                 } else {                                     alert(d.message);                                     btn.innerHTML='VALIDER';                                 }                             }).catch(err => { alert('Erreur: ' + err); btn.innerHTML='VALIDER'; });                         " style="background:#e67e22; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">VALIDER</button>                     </div></div>`)[0];
+                popup_40e17bbcb5ae7482e14579bb75cd33a3.setContent(html_4341e1e8e47e55aa1c94cdcca846fb0d);
+            
+        
+
+        circle_marker_af15bdff2e1975c382e0c1dc9de88c85.bindPopup(popup_40e17bbcb5ae7482e14579bb75cd33a3)
+        ;
+
+        
+    
+    
+            var circle_marker_803c68e1deed03c24b53de4145325b3d = L.circleMarker(
+                [48.2478004, -2.9803963],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+        var popup_c0bfa0b6bf5d66ac49ae693baa00f8da = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_08af9139e28f59c30283d623b0cdb655 = $(`<div id="html_08af9139e28f59c30283d623b0cdb655" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:150px;">                         <h4>Les Pages du Château</h4>                         <p>📍 Saint-Gilles-Vieux-Marché</p>                         <button data-key="LES PAGES DU CHÂTEAU|SAINT-GILLES-VIEUX-MARCHÉ" data-nom="Les Pages du Château" data-ville="Saint-Gilles-Vieux-Marché" onclick="                             let btn = this;                             let n = btn.getAttribute('data-nom');                             let v = btn.getAttribute('data-ville');                             btn.innerHTML='⏳...';                             fetch('https://script.google.com/macros/s/AKfycbwAZzQSc40qsN7aFbbPFa1kAkiOMbFilAwundbSsVScAEHOuN2Zs8eCIyfxWGbxmkvYMA/exec?commerce=' + encodeURIComponent(n) + '&ville=' + encodeURIComponent(v))                             .then(r => r.json()).then(d => {                                  if(d.status === 'success' || d.status === 'info') {                                      btn.innerHTML='✅ VALIDÉ';                                      btn.disabled=true;                                      btn.style.background='#27ae60';                                      btn.style.color='white';                                 } else {                                     alert(d.message);                                     btn.innerHTML='VALIDER';                                 }                             }).catch(err => { alert('Erreur: ' + err); btn.innerHTML='VALIDER'; });                         " style="background:#e67e22; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">VALIDER</button>                     </div></div>`)[0];
+                popup_c0bfa0b6bf5d66ac49ae693baa00f8da.setContent(html_08af9139e28f59c30283d623b0cdb655);
+            
+        
+
+        circle_marker_803c68e1deed03c24b53de4145325b3d.bindPopup(popup_c0bfa0b6bf5d66ac49ae693baa00f8da)
+        ;
+
+        
+    
+    
+            var circle_marker_acc05b843ce42d5f0f9789fbe5f17f55 = L.circleMarker(
+                [48.2557885, -3.0070659],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+        var popup_ba84fd128de971e999697775fa034403 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_4d374ed829e4f9585a5eb381ab5ffb97 = $(`<div id="html_4d374ed829e4f9585a5eb381ab5ffb97" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:150px;">                         <h4>Bar-Épicerie Le Saint May’E</h4>                         <p>📍 Saint-Mayeux</p>                         <button data-key="BAR-ÉPICERIE LE SAINT MAY’E|SAINT-MAYEUX" data-nom="Bar-Épicerie Le Saint May’E" data-ville="Saint-Mayeux" onclick="                             let btn = this;                             let n = btn.getAttribute('data-nom');                             let v = btn.getAttribute('data-ville');                             btn.innerHTML='⏳...';                             fetch('https://script.google.com/macros/s/AKfycbwAZzQSc40qsN7aFbbPFa1kAkiOMbFilAwundbSsVScAEHOuN2Zs8eCIyfxWGbxmkvYMA/exec?commerce=' + encodeURIComponent(n) + '&ville=' + encodeURIComponent(v))                             .then(r => r.json()).then(d => {                                  if(d.status === 'success' || d.status === 'info') {                                      btn.innerHTML='✅ VALIDÉ';                                      btn.disabled=true;                                      btn.style.background='#27ae60';                                      btn.style.color='white';                                 } else {                                     alert(d.message);                                     btn.innerHTML='VALIDER';                                 }                             }).catch(err => { alert('Erreur: ' + err); btn.innerHTML='VALIDER'; });                         " style="background:#e67e22; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">VALIDER</button>                     </div></div>`)[0];
+                popup_ba84fd128de971e999697775fa034403.setContent(html_4d374ed829e4f9585a5eb381ab5ffb97);
+            
+        
+
+        circle_marker_acc05b843ce42d5f0f9789fbe5f17f55.bindPopup(popup_ba84fd128de971e999697775fa034403)
+        ;
+
+        
+    
+    
+            var circle_marker_ea1ca995dbb2adbc0710235f75ec8c6d = L.circleMarker(
+                [48.2427844, -2.9747475],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+        var popup_ce171fed7dd61719b44a6975434309eb = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_0cf38ec742970c1a607f02390762b25a = $(`<div id="html_0cf38ec742970c1a607f02390762b25a" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:150px;">                         <h4>Bar Hôtel Restaurant de la Vallée</h4>                         <p>📍 Saint-Gilles-Vieux-Marché</p>                         <button data-key="BAR HÔTEL RESTAURANT DE LA VALLÉE|SAINT-GILLES-VIEUX-MARCHÉ" data-nom="Bar Hôtel Restaurant de la Vallée" data-ville="Saint-Gilles-Vieux-Marché" onclick="                             let btn = this;                             let n = btn.getAttribute('data-nom');                             let v = btn.getAttribute('data-ville');                             btn.innerHTML='⏳...';                             fetch('https://script.google.com/macros/s/AKfycbwAZzQSc40qsN7aFbbPFa1kAkiOMbFilAwundbSsVScAEHOuN2Zs8eCIyfxWGbxmkvYMA/exec?commerce=' + encodeURIComponent(n) + '&ville=' + encodeURIComponent(v))                             .then(r => r.json()).then(d => {                                  if(d.status === 'success' || d.status === 'info') {                                      btn.innerHTML='✅ VALIDÉ';                                      btn.disabled=true;                                      btn.style.background='#27ae60';                                      btn.style.color='white';                                 } else {                                     alert(d.message);                                     btn.innerHTML='VALIDER';                                 }                             }).catch(err => { alert('Erreur: ' + err); btn.innerHTML='VALIDER'; });                         " style="background:#e67e22; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">VALIDER</button>                     </div></div>`)[0];
+                popup_ce171fed7dd61719b44a6975434309eb.setContent(html_0cf38ec742970c1a607f02390762b25a);
+            
+        
+
+        circle_marker_ea1ca995dbb2adbc0710235f75ec8c6d.bindPopup(popup_ce171fed7dd61719b44a6975434309eb)
+        ;
+
+        
+    
+    
+            var circle_marker_054c0e965e72ede5ddb3983098963bef = L.circleMarker(
+                [48.2433565, -2.976208],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+        var popup_13149f9ef83a9a4ad42617b5e1561d4a = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_c5cfc7ad8d95c097f3473fc02e841461 = $(`<div id="html_c5cfc7ad8d95c097f3473fc02e841461" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:150px;">                         <h4>Salle des Fêtes</h4>                         <p>📍 Saint-Gilles-Vieux-Marché</p>                         <button data-key="SALLE DES FÊTES|SAINT-GILLES-VIEUX-MARCHÉ" data-nom="Salle des Fêtes" data-ville="Saint-Gilles-Vieux-Marché" onclick="                             let btn = this;                             let n = btn.getAttribute('data-nom');                             let v = btn.getAttribute('data-ville');                             btn.innerHTML='⏳...';                             fetch('https://script.google.com/macros/s/AKfycbwAZzQSc40qsN7aFbbPFa1kAkiOMbFilAwundbSsVScAEHOuN2Zs8eCIyfxWGbxmkvYMA/exec?commerce=' + encodeURIComponent(n) + '&ville=' + encodeURIComponent(v))                             .then(r => r.json()).then(d => {                                  if(d.status === 'success' || d.status === 'info') {                                      btn.innerHTML='✅ VALIDÉ';                                      btn.disabled=true;                                      btn.style.background='#27ae60';                                      btn.style.color='white';                                 } else {                                     alert(d.message);                                     btn.innerHTML='VALIDER';                                 }                             }).catch(err => { alert('Erreur: ' + err); btn.innerHTML='VALIDER'; });                         " style="background:#e67e22; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">VALIDER</button>                     </div></div>`)[0];
+                popup_13149f9ef83a9a4ad42617b5e1561d4a.setContent(html_c5cfc7ad8d95c097f3473fc02e841461);
+            
+        
+
+        circle_marker_054c0e965e72ede5ddb3983098963bef.bindPopup(popup_13149f9ef83a9a4ad42617b5e1561d4a)
+        ;
+
+        
+    
+    
+            var circle_marker_55318e34d505466ece0c2b9edb356a40 = L.circleMarker(
+                [48.243826, -2.974243],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+        var popup_8c87841c1879a9d3df96b52307079971 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_4b32df8e47fab7629eee4094027c7f3d = $(`<div id="html_4b32df8e47fab7629eee4094027c7f3d" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:150px;">                         <h4>Commerce</h4>                         <p>📍 Saint-Gilles-Vieux-Marché</p>                         <button data-key="COMMERCE|SAINT-GILLES-VIEUX-MARCHÉ" data-nom="Commerce" data-ville="Saint-Gilles-Vieux-Marché" onclick="                             let btn = this;                             let n = btn.getAttribute('data-nom');                             let v = btn.getAttribute('data-ville');                             btn.innerHTML='⏳...';                             fetch('https://script.google.com/macros/s/AKfycbwAZzQSc40qsN7aFbbPFa1kAkiOMbFilAwundbSsVScAEHOuN2Zs8eCIyfxWGbxmkvYMA/exec?commerce=' + encodeURIComponent(n) + '&ville=' + encodeURIComponent(v))                             .then(r => r.json()).then(d => {                                  if(d.status === 'success' || d.status === 'info') {                                      btn.innerHTML='✅ VALIDÉ';                                      btn.disabled=true;                                      btn.style.background='#27ae60';                                      btn.style.color='white';                                 } else {                                     alert(d.message);                                     btn.innerHTML='VALIDER';                                 }                             }).catch(err => { alert('Erreur: ' + err); btn.innerHTML='VALIDER'; });                         " style="background:#e67e22; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">VALIDER</button>                     </div></div>`)[0];
+                popup_8c87841c1879a9d3df96b52307079971.setContent(html_4b32df8e47fab7629eee4094027c7f3d);
+            
+        
+
+        circle_marker_55318e34d505466ece0c2b9edb356a40.bindPopup(popup_8c87841c1879a9d3df96b52307079971)
+        ;
+
+        
+    
+    
+            var circle_marker_efa9061ddfd7a8a0d1890872f01ae24b = L.circleMarker(
+                [48.2555196, -3.0057275],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_6d6843819b8098f0d5e906f606358e87);
+        
+    
+        var popup_d37f5d70e9d267220a6eacf450b05f67 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_9834bccc106bc557bfe2a3d310616139 = $(`<div id="html_9834bccc106bc557bfe2a3d310616139" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:150px;">                         <h4>Commerce</h4>                         <p>📍 Saint-Mayeux</p>                         <button data-key="COMMERCE|SAINT-MAYEUX" data-nom="Commerce" data-ville="Saint-Mayeux" onclick="                             let btn = this;                             let n = btn.getAttribute('data-nom');                             let v = btn.getAttribute('data-ville');                             btn.innerHTML='⏳...';                             fetch('https://script.google.com/macros/s/AKfycbwAZzQSc40qsN7aFbbPFa1kAkiOMbFilAwundbSsVScAEHOuN2Zs8eCIyfxWGbxmkvYMA/exec?commerce=' + encodeURIComponent(n) + '&ville=' + encodeURIComponent(v))                             .then(r => r.json()).then(d => {                                  if(d.status === 'success' || d.status === 'info') {                                      btn.innerHTML='✅ VALIDÉ';                                      btn.disabled=true;                                      btn.style.background='#27ae60';                                      btn.style.color='white';                                 } else {                                     alert(d.message);                                     btn.innerHTML='VALIDER';                                 }                             }).catch(err => { alert('Erreur: ' + err); btn.innerHTML='VALIDER'; });                         " style="background:#e67e22; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">VALIDER</button>                     </div></div>`)[0];
+                popup_d37f5d70e9d267220a6eacf450b05f67.setContent(html_9834bccc106bc557bfe2a3d310616139);
+            
+        
+
+        circle_marker_efa9061ddfd7a8a0d1890872f01ae24b.bindPopup(popup_d37f5d70e9d267220a6eacf450b05f67)
+        ;
+
+        
+    
+</script>
+</html>
