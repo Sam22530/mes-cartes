@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_abfcc272e7c98ed5bc03a010a3b225b3 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
+</head>
+<body>
+    
+    
+            <script>
+                var statusData = {}; // Stocke les statuts locaux
+                var apiUrl = "https://script.google.com/macros/s/AKfycbxuu1yNtarDQcH3L80bw9OCvtKrzGTMKc8vimdAeaq0dlm519bXtNJblTJJkr6x-Q9RRw/exec";
+
+                // 1. Fonction appelée par les boutons (Envoi)
+                function updateCommerce(nom, ville, etat, key) {
+                    var btns = getButtonsForKey(key);
+                    // Feedback visuel immediat
+                    btns.valider.innerText = "Wait...";
+                    btns.refuser.innerText = "Wait...";
+
+                    // Appel API avec paramètre 'etat'
+                    var url = apiUrl + "?commerce=" + encodeURIComponent(nom) + "&ville=" + encodeURIComponent(ville) + "&etat=" + etat;
+                    
+                    fetch(url)
+                    .then(r => r.json())
+                    .then(d => {
+                        console.log("Reponse:", d);
+                        // On met à jour le statut local
+                        statusData[key] = etat;
+                        applyStyles(key, etat);
+                    })
+                    .catch(err => {
+                        alert("Erreur connexion: " + err);
+                        // Reset style si erreur
+                        applyStyles(key, ""); 
+                    });
+                }
+
+                // 2. Fonction appelée au chargement (Lecture)
+                function fetchAllStatus() {
+                    fetch(apiUrl + "?action=read")
+                    .then(r => r.json())
+                    .then(data => {
+                        // Si c'est une liste (vieux format), on convertit
+                        if (Array.isArray(data)) {
+                            data.forEach(k => statusData[k] = "VALIDE");
+                        } else {
+                            statusData = data;
+                        }
+                        console.log("Donnees chargees:", Object.keys(statusData).length);
+                        updateAllButtons();
+                    })
+                    .catch(e => console.error("Erreur read:", e));
+                }
+
+                // 3. Applique les styles aux boutons d'un commerce
+                function applyStyles(key, etat) {
+                    var btns = getButtonsForKey(key);
+                    if(!btns.valider) return;
+
+                    // Reset
+                    btns.valider.disabled = false;
+                    btns.refuser.disabled = false;
+                    btns.valider.style.opacity = "1";
+                    btns.refuser.style.opacity = "1";
+                    btns.valider.innerText = "VALIDER";
+                    btns.refuser.innerText = "REFUSER";
+                    btns.valider.style.background = "#e67e22"; // Orange defaut
+                    btns.refuser.style.background = "#c0392b"; // Rouge defaut
+
+                    if (etat === "VALIDE") {
+                        btns.valider.innerText = "VALIDE";
+                        btns.valider.style.background = "#27ae60"; // Vert
+                        btns.valider.disabled = true;
+                        
+                        btns.refuser.style.background = "#bdc3c7"; // Gris
+                        btns.refuser.style.opacity = "0.5";
+                    } 
+                    else if (etat === "REFUSE") {
+                        btns.refuser.innerText = "REFUSE";
+                        btns.refuser.style.background = "#c0392b"; // Rouge Vif
+                        btns.refuser.disabled = true;
+
+                        btns.valider.style.background = "#bdc3c7"; // Gris
+                        btns.valider.style.opacity = "0.5";
+                    }
+                }
+
+                // Helper pour trouver les boutons dans le DOM
+                function getButtonsForKey(key) {
+                    // On cherche dans tout le document (quand popup ouverte)
+                    var v = document.querySelector('button.btn-valider[data-key="' + key + '"]');
+                    var r = document.querySelector('button.btn-refuser[data-key="' + key + '"]');
+                    return { valider: v, refuser: r };
+                }
+
+                // Met à jour tous les boutons visibles (utile lors de l'ouverture popup)
+                function updateAllButtons() {
+                    var keys = Object.keys(statusData);
+                    keys.forEach(k => applyStyles(k, statusData[k]));
+                }
+
+                // Surveiller l'ouverture des popups Leaflet
+                var observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.addedNodes.length) {
+                            updateAllButtons();
+                        }
+                    });
+                });
+
+                document.addEventListener("DOMContentLoaded", function() {
+                    fetchAllStatus(); // Lancer la recup
+                    observer.observe(document.body, { childList: true, subtree: true });
+                });
+            </script>
+            
+    
+            <div class="folium-map" id="map_abfcc272e7c98ed5bc03a010a3b225b3" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_abfcc272e7c98ed5bc03a010a3b225b3 = L.map(
+                "map_abfcc272e7c98ed5bc03a010a3b225b3",
+                {
+                    center: [48.2437472, -2.9749634],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 11,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_852e4847a835c9a13e607134ef809c24 = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 20,
+  "maxNativeZoom": 20,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"https://carto.com/attributions\"\u003eCARTO\u003c/a\u003e",
+  "subdomains": "abcd",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_852e4847a835c9a13e607134ef809c24.addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+
+            var geocoderOpts_geocoder_6eda35b4469e0c3817a60bae26686b27 = {
+  "collapsed": false,
+  "position": "topright",
+  "defaultMarkGeocode": true,
+  "zoom": 11,
+  "provider": "nominatim",
+  "providerOptions": {
+},
+};
+
+            // note: geocoder name should start with lowercase
+            var geocoderName_geocoder_6eda35b4469e0c3817a60bae26686b27 = geocoderOpts_geocoder_6eda35b4469e0c3817a60bae26686b27["provider"];
+
+            var customGeocoder_geocoder_6eda35b4469e0c3817a60bae26686b27 = L.Control.Geocoder[ geocoderName_geocoder_6eda35b4469e0c3817a60bae26686b27 ](
+                geocoderOpts_geocoder_6eda35b4469e0c3817a60bae26686b27['providerOptions']
+            );
+            geocoderOpts_geocoder_6eda35b4469e0c3817a60bae26686b27["geocoder"] = customGeocoder_geocoder_6eda35b4469e0c3817a60bae26686b27;
+
+            L.Control.geocoder(
+                geocoderOpts_geocoder_6eda35b4469e0c3817a60bae26686b27
+            ).on('markgeocode', function(e) {
+                var zoom = geocoderOpts_geocoder_6eda35b4469e0c3817a60bae26686b27['zoom'] || map_abfcc272e7c98ed5bc03a010a3b225b3.getZoom();
+                map_abfcc272e7c98ed5bc03a010a3b225b3.setView(e.geocode.center, zoom);
+            }).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+
+        
+    
+            var poly_line_7a8fc7aa077906e63a486e06d83b28c7 = L.polyline(
+                [[48.2013632, -2.9876599], [48.201711, -2.987339], [48.200779, -2.9865165], [48.2006505, -2.9862281], [48.2009665, -2.9858935], [48.2001374, -2.9871808], [48.2017915, -2.989111], [48.2025021, -2.9903696], [48.2098562, -3.0106067], [48.2555292, -3.0058354], [48.2555196, -3.0057275], [48.2557885, -3.0070659], [48.2478004, -2.9803963], [48.2433565, -2.976208], [48.2436034, -2.9748511], [48.243826, -2.974243], [48.2427844, -2.9747475], [48.2170768, -2.9354142], [48.2171407, -2.9349143], [48.2171436, -2.9347257]],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#1f77b4", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 4}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+            var circle_marker_c27aa7c0ab02e4026d59adc12c7c3848 = L.circleMarker(
+                [48.2013632, -2.9876599],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_ba7dcfa105f306d64d14328e3b413c85 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_819cf9b02ead6c1155fe9610ec3edb05 = $(`<div id="html_819cf9b02ead6c1155fe9610ec3edb05" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Commerce</h4>                         <p>Guerlédan</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="COMMERCE|GUERLÉDAN"                                  onclick="updateCommerce('Commerce', 'Guerlédan', 'VALIDE', 'COMMERCE|GUERLÉDAN')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="COMMERCE|GUERLÉDAN"                                  onclick="updateCommerce('Commerce', 'Guerlédan', 'REFUSE', 'COMMERCE|GUERLÉDAN')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_ba7dcfa105f306d64d14328e3b413c85.setContent(html_819cf9b02ead6c1155fe9610ec3edb05);
+            
+        
+
+        circle_marker_c27aa7c0ab02e4026d59adc12c7c3848.bindPopup(popup_ba7dcfa105f306d64d14328e3b413c85)
+        ;
+
+        
+    
+    
+            var circle_marker_75f8d7b480e2dd85179ce48025b4c833 = L.circleMarker(
+                [48.2001374, -2.9871808],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_4b5bad956de9fbda30f95003f4180f46 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_0288f81faae38726f5133c405accf6d6 = $(`<div id="html_0288f81faae38726f5133c405accf6d6" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Le Triskell</h4>                         <p>Guerlédan</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="LE TRISKELL|GUERLÉDAN"                                  onclick="updateCommerce('Le Triskell', 'Guerlédan', 'VALIDE', 'LE TRISKELL|GUERLÉDAN')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="LE TRISKELL|GUERLÉDAN"                                  onclick="updateCommerce('Le Triskell', 'Guerlédan', 'REFUSE', 'LE TRISKELL|GUERLÉDAN')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_4b5bad956de9fbda30f95003f4180f46.setContent(html_0288f81faae38726f5133c405accf6d6);
+            
+        
+
+        circle_marker_75f8d7b480e2dd85179ce48025b4c833.bindPopup(popup_4b5bad956de9fbda30f95003f4180f46)
+        ;
+
+        
+    
+    
+            var circle_marker_93282d17aa2132970681f0f480ac4dc2 = L.circleMarker(
+                [48.2171407, -2.9349143],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_c9ba6ff0c603b00713d1104d9e36e97d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_32d290262f1d567290b96a29b73c31e3 = $(`<div id="html_32d290262f1d567290b96a29b73c31e3" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Mairie de Saint-Guen</h4>                         <p>Saint-Guen</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="MAIRIE DE SAINT-GUEN|SAINT-GUEN"                                  onclick="updateCommerce('Mairie de Saint-Guen', 'Saint-Guen', 'VALIDE', 'MAIRIE DE SAINT-GUEN|SAINT-GUEN')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="MAIRIE DE SAINT-GUEN|SAINT-GUEN"                                  onclick="updateCommerce('Mairie de Saint-Guen', 'Saint-Guen', 'REFUSE', 'MAIRIE DE SAINT-GUEN|SAINT-GUEN')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_c9ba6ff0c603b00713d1104d9e36e97d.setContent(html_32d290262f1d567290b96a29b73c31e3);
+            
+        
+
+        circle_marker_93282d17aa2132970681f0f480ac4dc2.bindPopup(popup_c9ba6ff0c603b00713d1104d9e36e97d)
+        ;
+
+        
+    
+    
+            var circle_marker_f70cfa2a4a80b62e2ed1957cc02bccfd = L.circleMarker(
+                [48.2098562, -3.0106067],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_51b3efa577cbc2f6ee340e8c83c605ee = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_086ba0e38f3dbd88707f60f92c6ece58 = $(`<div id="html_086ba0e38f3dbd88707f60f92c6ece58" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Commerce</h4>                         <p>Guerlédan</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="COMMERCE|GUERLÉDAN"                                  onclick="updateCommerce('Commerce', 'Guerlédan', 'VALIDE', 'COMMERCE|GUERLÉDAN')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="COMMERCE|GUERLÉDAN"                                  onclick="updateCommerce('Commerce', 'Guerlédan', 'REFUSE', 'COMMERCE|GUERLÉDAN')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_51b3efa577cbc2f6ee340e8c83c605ee.setContent(html_086ba0e38f3dbd88707f60f92c6ece58);
+            
+        
+
+        circle_marker_f70cfa2a4a80b62e2ed1957cc02bccfd.bindPopup(popup_51b3efa577cbc2f6ee340e8c83c605ee)
+        ;
+
+        
+    
+    
+            var circle_marker_ad44b8405795b2d3c001f9b1dac9a196 = L.circleMarker(
+                [48.2171436, -2.9347257],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_533954a3db6d8d0f4ca2edf5445f3d74 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_60e408046e4778853c0462ffd4754f0d = $(`<div id="html_60e408046e4778853c0462ffd4754f0d" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Poste Annexe</h4>                         <p>Guerlédan</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="POSTE ANNEXE|GUERLÉDAN"                                  onclick="updateCommerce('Poste Annexe', 'Guerlédan', 'VALIDE', 'POSTE ANNEXE|GUERLÉDAN')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="POSTE ANNEXE|GUERLÉDAN"                                  onclick="updateCommerce('Poste Annexe', 'Guerlédan', 'REFUSE', 'POSTE ANNEXE|GUERLÉDAN')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_533954a3db6d8d0f4ca2edf5445f3d74.setContent(html_60e408046e4778853c0462ffd4754f0d);
+            
+        
+
+        circle_marker_ad44b8405795b2d3c001f9b1dac9a196.bindPopup(popup_533954a3db6d8d0f4ca2edf5445f3d74)
+        ;
+
+        
+    
+    
+            var circle_marker_f08e667e5bb4f749b8fb2b246a3ebb3c = L.circleMarker(
+                [48.2555292, -3.0058354],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_acf5ede543ddae142b1cb326ff096f03 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_f7eb1c99019364e7c2ab4ba32835387d = $(`<div id="html_f7eb1c99019364e7c2ab4ba32835387d" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Poste Annexe</h4>                         <p>Saint-Mayeux</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="POSTE ANNEXE|SAINT-MAYEUX"                                  onclick="updateCommerce('Poste Annexe', 'Saint-Mayeux', 'VALIDE', 'POSTE ANNEXE|SAINT-MAYEUX')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="POSTE ANNEXE|SAINT-MAYEUX"                                  onclick="updateCommerce('Poste Annexe', 'Saint-Mayeux', 'REFUSE', 'POSTE ANNEXE|SAINT-MAYEUX')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_acf5ede543ddae142b1cb326ff096f03.setContent(html_f7eb1c99019364e7c2ab4ba32835387d);
+            
+        
+
+        circle_marker_f08e667e5bb4f749b8fb2b246a3ebb3c.bindPopup(popup_acf5ede543ddae142b1cb326ff096f03)
+        ;
+
+        
+    
+    
+            var circle_marker_e82e2ffeb5ce2589b2b45d07331521f3 = L.circleMarker(
+                [48.2006505, -2.9862281],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_0d8a2571cfeaf8d78138286d9c1b2c5d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_336c52add6e7c60920af8ccf71950d13 = $(`<div id="html_336c52add6e7c60920af8ccf71950d13" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Commerce</h4>                         <p>Guerlédan</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="COMMERCE|GUERLÉDAN"                                  onclick="updateCommerce('Commerce', 'Guerlédan', 'VALIDE', 'COMMERCE|GUERLÉDAN')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="COMMERCE|GUERLÉDAN"                                  onclick="updateCommerce('Commerce', 'Guerlédan', 'REFUSE', 'COMMERCE|GUERLÉDAN')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_0d8a2571cfeaf8d78138286d9c1b2c5d.setContent(html_336c52add6e7c60920af8ccf71950d13);
+            
+        
+
+        circle_marker_e82e2ffeb5ce2589b2b45d07331521f3.bindPopup(popup_0d8a2571cfeaf8d78138286d9c1b2c5d)
+        ;
+
+        
+    
+    
+            var circle_marker_d4d70f67f1f72ec28c2d1e37f2d07b17 = L.circleMarker(
+                [48.2170768, -2.9354142],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_db33dff495a1a74bd68b619d53838b5c = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_0dff4d25907559f2ea51acd02535ccf8 = $(`<div id="html_0dff4d25907559f2ea51acd02535ccf8" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Commerce</h4>                         <p>Guerlédan</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="COMMERCE|GUERLÉDAN"                                  onclick="updateCommerce('Commerce', 'Guerlédan', 'VALIDE', 'COMMERCE|GUERLÉDAN')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="COMMERCE|GUERLÉDAN"                                  onclick="updateCommerce('Commerce', 'Guerlédan', 'REFUSE', 'COMMERCE|GUERLÉDAN')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_db33dff495a1a74bd68b619d53838b5c.setContent(html_0dff4d25907559f2ea51acd02535ccf8);
+            
+        
+
+        circle_marker_d4d70f67f1f72ec28c2d1e37f2d07b17.bindPopup(popup_db33dff495a1a74bd68b619d53838b5c)
+        ;
+
+        
+    
+    
+            var circle_marker_8761c582b9472db6302f586cb16e73f7 = L.circleMarker(
+                [48.2025021, -2.9903696],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_2004d05fc43348871339d173d13fbb3f = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_c000ce61e83e31c43e56a2c0c5b3e7ff = $(`<div id="html_c000ce61e83e31c43e56a2c0c5b3e7ff" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Le Tchin Broc</h4>                         <p>Guerlédan</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="LE TCHIN BROC|GUERLÉDAN"                                  onclick="updateCommerce('Le Tchin Broc', 'Guerlédan', 'VALIDE', 'LE TCHIN BROC|GUERLÉDAN')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="LE TCHIN BROC|GUERLÉDAN"                                  onclick="updateCommerce('Le Tchin Broc', 'Guerlédan', 'REFUSE', 'LE TCHIN BROC|GUERLÉDAN')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_2004d05fc43348871339d173d13fbb3f.setContent(html_c000ce61e83e31c43e56a2c0c5b3e7ff);
+            
+        
+
+        circle_marker_8761c582b9472db6302f586cb16e73f7.bindPopup(popup_2004d05fc43348871339d173d13fbb3f)
+        ;
+
+        
+    
+    
+            var circle_marker_aadd2b43b88beda9811c51d7ef78b0d2 = L.circleMarker(
+                [48.2436034, -2.9748511],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_fe0278d637f8a6db82eba8f2443c2902 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_ff94112f17d9c2441fda2e552c8d2025 = $(`<div id="html_ff94112f17d9c2441fda2e552c8d2025" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Petite bibliothèque gratuite</h4>                         <p>Saint-Gilles-Vieux-Marché</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="PETITE BIBLIOTHÈQUE GRATUITE|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Petite bibliothèque gratuite', 'Saint-Gilles-Vieux-Marché', 'VALIDE', 'PETITE BIBLIOTHÈQUE GRATUITE|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="PETITE BIBLIOTHÈQUE GRATUITE|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Petite bibliothèque gratuite', 'Saint-Gilles-Vieux-Marché', 'REFUSE', 'PETITE BIBLIOTHÈQUE GRATUITE|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_fe0278d637f8a6db82eba8f2443c2902.setContent(html_ff94112f17d9c2441fda2e552c8d2025);
+            
+        
+
+        circle_marker_aadd2b43b88beda9811c51d7ef78b0d2.bindPopup(popup_fe0278d637f8a6db82eba8f2443c2902)
+        ;
+
+        
+    
+    
+            var circle_marker_db76cbe42cd3555f5111857248068db4 = L.circleMarker(
+                [48.2478004, -2.9803963],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_16b735efa130cfb50f47a41a6912c2df = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_93f677922417e97b8a97c8e01b750988 = $(`<div id="html_93f677922417e97b8a97c8e01b750988" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Les Pages du Château</h4>                         <p>Saint-Gilles-Vieux-Marché</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="LES PAGES DU CHÂTEAU|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Les Pages du Château', 'Saint-Gilles-Vieux-Marché', 'VALIDE', 'LES PAGES DU CHÂTEAU|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="LES PAGES DU CHÂTEAU|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Les Pages du Château', 'Saint-Gilles-Vieux-Marché', 'REFUSE', 'LES PAGES DU CHÂTEAU|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_16b735efa130cfb50f47a41a6912c2df.setContent(html_93f677922417e97b8a97c8e01b750988);
+            
+        
+
+        circle_marker_db76cbe42cd3555f5111857248068db4.bindPopup(popup_16b735efa130cfb50f47a41a6912c2df)
+        ;
+
+        
+    
+    
+            var circle_marker_f53c32210f9996edc53ef90505160a61 = L.circleMarker(
+                [48.2557885, -3.0070659],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_b842a98de7747c63095c1cf7239796ff = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_db8869cd480f161b0324777a2c5f36fc = $(`<div id="html_db8869cd480f161b0324777a2c5f36fc" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Bar-Épicerie Le Saint May’E</h4>                         <p>Saint-Mayeux</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="BAR-ÉPICERIE LE SAINT MAY’E|SAINT-MAYEUX"                                  onclick="updateCommerce('Bar-Épicerie Le Saint May’E', 'Saint-Mayeux', 'VALIDE', 'BAR-ÉPICERIE LE SAINT MAY’E|SAINT-MAYEUX')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="BAR-ÉPICERIE LE SAINT MAY’E|SAINT-MAYEUX"                                  onclick="updateCommerce('Bar-Épicerie Le Saint May’E', 'Saint-Mayeux', 'REFUSE', 'BAR-ÉPICERIE LE SAINT MAY’E|SAINT-MAYEUX')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_b842a98de7747c63095c1cf7239796ff.setContent(html_db8869cd480f161b0324777a2c5f36fc);
+            
+        
+
+        circle_marker_f53c32210f9996edc53ef90505160a61.bindPopup(popup_b842a98de7747c63095c1cf7239796ff)
+        ;
+
+        
+    
+    
+            var circle_marker_e0bab52166312019780b135d9bbef16f = L.circleMarker(
+                [48.2427844, -2.9747475],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_ad7d1a7ed383beb9087e2cddb1e7f6a8 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_3ac232cbde82c5980106a4d8df69311e = $(`<div id="html_3ac232cbde82c5980106a4d8df69311e" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Bar Hôtel Restaurant de la Vallée</h4>                         <p>Saint-Gilles-Vieux-Marché</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="BAR HÔTEL RESTAURANT DE LA VALLÉE|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Bar Hôtel Restaurant de la Vallée', 'Saint-Gilles-Vieux-Marché', 'VALIDE', 'BAR HÔTEL RESTAURANT DE LA VALLÉE|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="BAR HÔTEL RESTAURANT DE LA VALLÉE|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Bar Hôtel Restaurant de la Vallée', 'Saint-Gilles-Vieux-Marché', 'REFUSE', 'BAR HÔTEL RESTAURANT DE LA VALLÉE|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_ad7d1a7ed383beb9087e2cddb1e7f6a8.setContent(html_3ac232cbde82c5980106a4d8df69311e);
+            
+        
+
+        circle_marker_e0bab52166312019780b135d9bbef16f.bindPopup(popup_ad7d1a7ed383beb9087e2cddb1e7f6a8)
+        ;
+
+        
+    
+    
+            var circle_marker_384bd465b20123b1b51541af02ee2d97 = L.circleMarker(
+                [48.2433565, -2.976208],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_78c771416fa6251aff2b80c3c130e6a9 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_d9621db244515e626c0c9311f7fa4aeb = $(`<div id="html_d9621db244515e626c0c9311f7fa4aeb" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Salle des Fêtes</h4>                         <p>Saint-Gilles-Vieux-Marché</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="SALLE DES FÊTES|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Salle des Fêtes', 'Saint-Gilles-Vieux-Marché', 'VALIDE', 'SALLE DES FÊTES|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="SALLE DES FÊTES|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Salle des Fêtes', 'Saint-Gilles-Vieux-Marché', 'REFUSE', 'SALLE DES FÊTES|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_78c771416fa6251aff2b80c3c130e6a9.setContent(html_d9621db244515e626c0c9311f7fa4aeb);
+            
+        
+
+        circle_marker_384bd465b20123b1b51541af02ee2d97.bindPopup(popup_78c771416fa6251aff2b80c3c130e6a9)
+        ;
+
+        
+    
+    
+            var circle_marker_f02132cad48f89eeea7fea5e42a9c63e = L.circleMarker(
+                [48.243826, -2.974243],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_8e46b8d4bcc8351c1f9760064ad81440 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_242ab65dffb6d306489bd62690b032e9 = $(`<div id="html_242ab65dffb6d306489bd62690b032e9" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Commerce</h4>                         <p>Saint-Gilles-Vieux-Marché</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="COMMERCE|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Commerce', 'Saint-Gilles-Vieux-Marché', 'VALIDE', 'COMMERCE|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="COMMERCE|SAINT-GILLES-VIEUX-MARCHÉ"                                  onclick="updateCommerce('Commerce', 'Saint-Gilles-Vieux-Marché', 'REFUSE', 'COMMERCE|SAINT-GILLES-VIEUX-MARCHÉ')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_8e46b8d4bcc8351c1f9760064ad81440.setContent(html_242ab65dffb6d306489bd62690b032e9);
+            
+        
+
+        circle_marker_f02132cad48f89eeea7fea5e42a9c63e.bindPopup(popup_8e46b8d4bcc8351c1f9760064ad81440)
+        ;
+
+        
+    
+    
+            var circle_marker_e3f7630737d0c77ec60e2805eebe4bfc = L.circleMarker(
+                [48.2555196, -3.0057275],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_ae2a891ef6a8c92c55224f984e4ca8e7 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_8636ce4882cd7adf8094e7a6485e409c = $(`<div id="html_8636ce4882cd7adf8094e7a6485e409c" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Commerce</h4>                         <p>Saint-Mayeux</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="COMMERCE|SAINT-MAYEUX"                                  onclick="updateCommerce('Commerce', 'Saint-Mayeux', 'VALIDE', 'COMMERCE|SAINT-MAYEUX')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="COMMERCE|SAINT-MAYEUX"                                  onclick="updateCommerce('Commerce', 'Saint-Mayeux', 'REFUSE', 'COMMERCE|SAINT-MAYEUX')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_ae2a891ef6a8c92c55224f984e4ca8e7.setContent(html_8636ce4882cd7adf8094e7a6485e409c);
+            
+        
+
+        circle_marker_e3f7630737d0c77ec60e2805eebe4bfc.bindPopup(popup_ae2a891ef6a8c92c55224f984e4ca8e7)
+        ;
+
+        
+    
+    
+            var circle_marker_86329eea8ea53796e7c886c94232fc69 = L.circleMarker(
+                [48.2009665, -2.9858935],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_76583e088842281861962b463e2f7860 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_9b45aa7e5c4c62925ef1ddc849001997 = $(`<div id="html_9b45aa7e5c4c62925ef1ddc849001997" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Auberge des blés d or</h4>                         <p>Mûr-de-Bretagne</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="AUBERGE DES BLÉS D OR|MÛR-DE-BRETAGNE"                                  onclick="updateCommerce('Auberge des blés d or', 'Mûr-de-Bretagne', 'VALIDE', 'AUBERGE DES BLÉS D OR|MÛR-DE-BRETAGNE')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="AUBERGE DES BLÉS D OR|MÛR-DE-BRETAGNE"                                  onclick="updateCommerce('Auberge des blés d or', 'Mûr-de-Bretagne', 'REFUSE', 'AUBERGE DES BLÉS D OR|MÛR-DE-BRETAGNE')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_76583e088842281861962b463e2f7860.setContent(html_9b45aa7e5c4c62925ef1ddc849001997);
+            
+        
+
+        circle_marker_86329eea8ea53796e7c886c94232fc69.bindPopup(popup_76583e088842281861962b463e2f7860)
+        ;
+
+        
+    
+    
+            var circle_marker_8b5132f0d049f0b38de58784ad1c3081 = L.circleMarker(
+                [48.201711, -2.987339],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_b7f15b2fa25c384ccef75e8019839268 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_9c73c0651829a6793bcc312a37e25069 = $(`<div id="html_9c73c0651829a6793bcc312a37e25069" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Mairie de Mûr-de-Bretagne</h4>                         <p>Mûr-de-Bretagne</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="MAIRIE DE MÛR-DE-BRETAGNE|MÛR-DE-BRETAGNE"                                  onclick="updateCommerce('Mairie de Mûr-de-Bretagne', 'Mûr-de-Bretagne', 'VALIDE', 'MAIRIE DE MÛR-DE-BRETAGNE|MÛR-DE-BRETAGNE')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="MAIRIE DE MÛR-DE-BRETAGNE|MÛR-DE-BRETAGNE"                                  onclick="updateCommerce('Mairie de Mûr-de-Bretagne', 'Mûr-de-Bretagne', 'REFUSE', 'MAIRIE DE MÛR-DE-BRETAGNE|MÛR-DE-BRETAGNE')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_b7f15b2fa25c384ccef75e8019839268.setContent(html_9c73c0651829a6793bcc312a37e25069);
+            
+        
+
+        circle_marker_8b5132f0d049f0b38de58784ad1c3081.bindPopup(popup_b7f15b2fa25c384ccef75e8019839268)
+        ;
+
+        
+    
+    
+            var circle_marker_221599702dcb772b9e253c1364cb6dce = L.circleMarker(
+                [48.2017915, -2.989111],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_6486a46c231748eae0ab6e2580d5672c = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_90db4c18cf90e6fa2be3c4964a28ea9e = $(`<div id="html_90db4c18cf90e6fa2be3c4964a28ea9e" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Le mur à pizza</h4>                         <p>Mûr-de-Bretagne</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="LE MUR À PIZZA|MÛR-DE-BRETAGNE"                                  onclick="updateCommerce('Le mur à pizza', 'Mûr-de-Bretagne', 'VALIDE', 'LE MUR À PIZZA|MÛR-DE-BRETAGNE')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="LE MUR À PIZZA|MÛR-DE-BRETAGNE"                                  onclick="updateCommerce('Le mur à pizza', 'Mûr-de-Bretagne', 'REFUSE', 'LE MUR À PIZZA|MÛR-DE-BRETAGNE')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_6486a46c231748eae0ab6e2580d5672c.setContent(html_90db4c18cf90e6fa2be3c4964a28ea9e);
+            
+        
+
+        circle_marker_221599702dcb772b9e253c1364cb6dce.bindPopup(popup_6486a46c231748eae0ab6e2580d5672c)
+        ;
+
+        
+    
+    
+            var circle_marker_14b52d8fed6f8ff425699ef037a567d9 = L.circleMarker(
+                [48.200779, -2.9865165],
+                {"bubblingMouseEvents": true, "color": "#1f77b4", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1f77b4", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6, "stroke": true, "weight": 3}
+            ).addTo(map_abfcc272e7c98ed5bc03a010a3b225b3);
+        
+    
+        var popup_c02b0414159dd51157ae56762b9ba6c3 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_0961f0cd562a4cc94b9d909cd0d92bff = $(`<div id="html_0961f0cd562a4cc94b9d909cd0d92bff" style="width: 100.0%; height: 100.0%;">                     <div style="font-family:sans-serif; text-align:center; min-width:180px;">                         <h4>Bar tabac</h4>                         <p>Guerlédan</p>                         <div style="display:flex; justify-content:space-between; gap:5px; margin-top:10px;">                             <button                                  class="btn-valider"                                 data-key="BAR TABAC|GUERLÉDAN"                                  onclick="updateCommerce('Bar tabac', 'Guerlédan', 'VALIDE', 'BAR TABAC|GUERLÉDAN')"                                 style="flex:1; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 VALIDER                             </button>                             <button                                  class="btn-refuser"                                 data-key="BAR TABAC|GUERLÉDAN"                                  onclick="updateCommerce('Bar tabac', 'Guerlédan', 'REFUSE', 'BAR TABAC|GUERLÉDAN')"                                 style="flex:1; background:#95a5a6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">                                 REFUSER                             </button>                         </div>                     </div></div>`)[0];
+                popup_c02b0414159dd51157ae56762b9ba6c3.setContent(html_0961f0cd562a4cc94b9d909cd0d92bff);
+            
+        
+
+        circle_marker_14b52d8fed6f8ff425699ef037a567d9.bindPopup(popup_c02b0414159dd51157ae56762b9ba6c3)
+        ;
+
+        
+    
+</script>
+</html>
